@@ -9,9 +9,12 @@ local mob   = {
 	--automatic_face_movement_dir = 0.0,
 	yaw = 0,
 	turnspeed = 0,
-	jump = false,
+	jump = true,
 	fall = false,
 	timer = 0,
+	makes_footstep_sound = true,
+	stepheight = 1, --2 for not jumping
+	collide_with_objects = false,
 }
 --punch function
 function mob.on_punch(self)
@@ -26,8 +29,31 @@ end
 --when the entity is created in world
 function mob.on_activate(self, staticdata, dtime_s)
 	self.object:setacceleration({x=0,y=-10,z=0})
-	self.object:set_animation(
-		{x=81,y=100},15, 0)
+	self.yaw = math.random()*math.random(0,6) -- will be corrected if over 6.28
+	self.object:set_animation({x=81,y=100},15, 0)
+	local pos = self.object:getpos()
+	minetest.add_particlespawner({
+		 amount = 40,
+		 time = 0.1,
+		 minpos = {x=pos.x-0.5, y=pos.y, z=pos.z-0.5},
+		 maxpos = {x=pos.x+0.5, y=pos.y+1, z=pos.z+0.5},
+		 minvel = {x=0, y=1, z=0},
+		 maxvel = {x=0, y=2, z=0},
+		 minacc = {x=0, y=0, z=0},
+		 maxacc = {x=0, y=0, z=0},
+		 minexptime = 1,
+		 maxexptime = 1,
+		 minsize = 1,
+		 maxsize = 2,
+		 collisiondetection = false,
+		 vertical = false,
+		 texture = "spawn_smoke.png",
+	})
+	minetest.sound_play("poof", {
+		pos = pos,
+		max_hear_distance = 100,
+		gain = 10.0,
+	})
 end
 
 --what the minecart does in the world
@@ -49,14 +75,18 @@ function mob.on_step(self, dtime)
 	local x = math.sin(self.yaw) * -1 -- * speed
 	local z = math.cos(self.yaw) * 1
 	
+	
+	--jumping
 	local vel = self.object:getvelocity()
-	if (vel.x == 0 or vel.z == 0) and self.jump == false then
-		print("jump")
+	if (math.abs(vel.x)+0.1 < math.abs(x) or math.abs(vel.z)+0.1 < math.abs(z)) and self.jump == false then
 		vel.y = 5
 		self.jump = true
+		self.fall = false
+	--when landing, reset jump to false
 	elseif self.jump == true and vel.y == 0 and self.fall == true then
 		self.jump = false
 	else
+		--when falling, set fall to true
 		if vel.y < 0 then
 			self.fall = true
 		end
