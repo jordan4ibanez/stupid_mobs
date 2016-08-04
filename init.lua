@@ -9,7 +9,7 @@ local mob   = {
 	--automatic_face_movement_dir = 0.0,
 	yaw = 0,
 	turnspeed = 0,
-	jump = true,
+	jump = false,
 	fall = false,
 	timer = 0,
 	makes_footstep_sound = true,
@@ -18,7 +18,7 @@ local mob   = {
 }
 --punch function
 function mob.on_punch(self)
-	self.object:remove()
+	self.object:set_properties({mesh = "mobs_sheep_shaved.x", textures = {"mobs_sheep_shaved.png"}})
 end
 
 --right click function
@@ -28,6 +28,7 @@ end
 
 --when the entity is created in world
 function mob.on_activate(self, staticdata, dtime_s)
+	self.object:set_armor_groups({immortal = 1})
 	self.object:setacceleration({x=0,y=-10,z=0})
 	self.yaw = math.random()*math.random(0,6) -- will be corrected if over 6.28
 	self.object:set_animation({x=81,y=100},15, 0)
@@ -55,10 +56,17 @@ function mob.on_activate(self, staticdata, dtime_s)
 		gain = 10.0,
 	})
 end
+function mob.get_staticdata(self)
+	return minetest.serialize({
+		timer = self.timer,
+
+	})
+end
 
 --what the minecart does in the world
 function mob.on_step(self, dtime)
 	self.timer = self.timer + dtime
+	---self.object:set_properties({visual_size = {x=self.timer, y=self.timer}})
 	if self.timer > 2 then
 		self.turnspeed = (math.random(1,10) * 0.01) * math.random(-1,1)
 		self.timer = 0
